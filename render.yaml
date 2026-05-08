@@ -1,6 +1,17 @@
 services:
   - type: web
-    name: titanium-v5-backend
+    name: titanium-v5
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 10000
+    startCommand: python app.py
+    envVars:
+      - key: FLASK_SECRET
+        generateValue: true
+      - key: STRIPE_SECRET
+        sync: false
+      - key: GROK_API_KEY
+        sync: false
+      - key: TG_TOKEN
+        sync: false
+      - key: TG_CHAT_ID
+        sync: false
