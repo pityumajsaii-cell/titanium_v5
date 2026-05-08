@@ -47,3 +47,26 @@ def health():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+# --- MULTI-SYSTEM ROUTER (A többi rendszer fogadásához) ---
+@app.route("/api/nexus/connect", methods=["POST"])
+def connect_system():
+    data = request.get_json(silent=True) or {}
+    system_name = data.get("system_name", "Unknown_Module")
+    auth_key = data.get("auth_key")
+    
+    if auth_key != ADMIN_TOKEN:
+        return jsonify({"status": "REJECTED", "reason": "Invalid Auth Key"}), 403
+        
+    # Új rendszer regisztrálása az adatbázisba
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("INSERT INTO system_logs (source, type, val, data, time) VALUES (?, ?, ?, ?, ?)",
+                 (system_name, "SYSTEM_LINK", 0, f"System {system_name} connected successfully", datetime.datetime.now()))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        "status": "LINKED",
+        "system": system_name,
+        "message": "Welcome to the Titanium Empire"
+    }), 200
