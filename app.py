@@ -129,3 +129,21 @@ def admin_data():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
+
+@app.route("/api/bridge", methods=["POST"])
+def bridge():
+    try:
+        data = request.json or {}
+
+        # minimális validáció (nem AI, nem signature varázslat)
+        if not data:
+            return jsonify({"status": "empty"}), 400
+
+        return jsonify({
+            "status": "ok",
+            "message": "bridge active",
+            "received": data
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
