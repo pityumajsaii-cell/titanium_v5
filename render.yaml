@@ -3,15 +3,4 @@ services:
     name: titanium-v5
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
-    envVars:
-      - key: FLASK_SECRET
-        generateValue: true
-      - key: STRIPE_SECRET
-        sync: false
-      - key: GROK_API_KEY
-        sync: false
-      - key: TG_TOKEN
-        sync: false
-      - key: TG_CHAT_ID
-        sync: false
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT

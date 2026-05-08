@@ -11,12 +11,17 @@ def home():
 
 @app.route("/version")
 def version():
-    return jsonify({"status": "online", "version": VERSION}), 200
+    return jsonify({
+        "status": "online",
+        "version": VERSION
+    }), 200
 
 @app.route("/admin/stats")
 def stats():
-    return jsonify({"status": "ok", "service": "titanium", "version": VERSION}), 200
+    return jsonify({
+        "status": "ok",
+        "service": "titanium",
+        "version": VERSION
+    }), 200
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+# IMPORTANT: Render uses gunicorn, not this block
