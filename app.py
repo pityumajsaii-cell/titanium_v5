@@ -1,27 +1,26 @@
-
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 import os
 
 app = Flask(__name__)
 
-VERSION = "FIXED-V1"
+VERSION = "V6-STABLE"
 
 @app.route("/")
 def home():
-    return "TITANIUM OK", 200
+    return "TITANIUM LIVE OK", 200
 
 @app.route("/version")
 def version():
-    return jsonify({"status": "ok", "version": VERSION}), 200
+    return jsonify({"status": "online", "version": VERSION}), 200
 
 @app.route("/admin/stats")
 def stats():
-    token = request.headers.get("Authorization", "")
-    if token != "Bearer admin":
-        return jsonify({"error": "unauthorized"}), 401
-    return jsonify({"status": "ok", "version": VERSION}), 200
+    return jsonify({
+        "status": "ok",
+        "service": "titanium",
+        "version": VERSION
+    }), 200
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-
