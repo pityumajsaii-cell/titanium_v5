@@ -11,7 +11,10 @@ def home():
 
 @app.route("/version")
 def version():
-    return jsonify({"status": "online", "version": VERSION}), 200
+    return jsonify({
+        "status": "online",
+        "version": VERSION
+    }), 200
 
 @app.route("/admin/stats")
 def stats():
