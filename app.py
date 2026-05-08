@@ -1,72 +1,84 @@
 from flask import Flask, request, jsonify, render_template_string
-import os, sqlite3, requests, datetime, json
+import os, sqlite3, datetime, json
 
 app = Flask(__name__)
 
-# --- KONFIGURÁCIÓ ---
-VERSION = "TITANIUM-GENESIS-V5"
-DB_PATH = "titanium_vault.db"
-ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "dev")
+# --- TITANIUM CORE CONFIG ---
+VERSION = "TITANIUM-CORE-NEXUS-V5.5"
+DB_PATH = "titanium_core.db" # A Kész Rendszer központi tárolója
 
-def init_db():
+def init_core():
     conn = sqlite3.connect(DB_PATH)
-    conn.execute("CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT, type TEXT, val REAL, data TEXT, time DATETIME)")
+    # Rendszerbeállítások és állapotok
+    conn.execute("CREATE TABLE IF NOT EXISTS system_state (key TEXT PRIMARY KEY, value TEXT)")
+    # Üzleti tranzakciók és leadek
+    conn.execute("""CREATE TABLE IF NOT EXISTS core_vault 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT, type TEXT, val REAL, timestamp DATETIME)""")
+    # Alapértelmezett értékek beállítása (Kész Rendszer státusz)
+    conn.execute("INSERT OR IGNORE INTO system_state (key, value) VALUES ('mode', 'MAX_MODE')")
+    conn.execute("INSERT OR IGNORE INTO system_state (key, value) VALUES ('status', 'KESZ_RENDSZER_ACTIVE')")
     conn.commit()
     conn.close()
 
-init_db()
+init_core()
 
+# --- AZ EGYESÍTETT HÍD (CORE + NEXUS) ---
 @app.route("/api/bridge", methods=["POST"])
-def bridge():
+def core_bridge():
     data = request.get_json(silent=True) or {}
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("INSERT INTO system_logs (source, type, val, data, time) VALUES (?, ?, ?, ?, ?)",
-                 (data.get("source"), data.get("type", "DATA"), data.get("value", 0), str(data), datetime.datetime.now()))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "SUCCESS", "engine": VERSION}), 202
-
-@app.route("/admin")
-def dashboard():
-    conn = sqlite3.connect(DB_PATH)
-    logs = conn.execute("SELECT * FROM system_logs ORDER BY time DESC LIMIT 15").fetchall()
-    total = conn.execute("SELECT SUM(val) FROM system_logs").fetchone()[0] or 0
-    conn.close()
-    return render_template_string("""
-    <body style="background:#000; color:#0f0; font-family:monospace; padding:20px;">
-        <h1>💎 TITANIUM GENESIS DASHBOARD</h1>
-        <hr border="1" color="#0f0">
-        <h3>VÁRHATÓ ÖSSZES BEVÉTEL: {{ total }} EUR</h3>
-        <ul>{% for l in logs %}<li>[{{ l[5][:19] }}] <b>{{ l[1] }}</b> -> {{ l[2] }} ({{ l[3] }} EUR)</li>{% endfor %}</ul>
-    </body>
-    """, logs=logs, total=total)
-
-@app.route("/")
-def health():
-    return f"Titanium System V5: ONLINE", 200
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
-
-# --- MULTI-SYSTEM ROUTER (A többi rendszer fogadásához) ---
-@app.route("/api/nexus/connect", methods=["POST"])
-def connect_system():
-    data = request.get_json(silent=True) or {}
-    system_name = data.get("system_name", "Unknown_Module")
-    auth_key = data.get("auth_key")
+    source = data.get("source", "Titanium-Unit")
+    val = data.get("value", 0)
     
-    if auth_key != ADMIN_TOKEN:
-        return jsonify({"status": "REJECTED", "reason": "Invalid Auth Key"}), 403
-        
-    # Új rendszer regisztrálása az adatbázisba
     conn = sqlite3.connect(DB_PATH)
-    conn.execute("INSERT INTO system_logs (source, type, val, data, time) VALUES (?, ?, ?, ?, ?)",
-                 (system_name, "SYSTEM_LINK", 0, f"System {system_name} connected successfully", datetime.datetime.now()))
+    conn.execute("INSERT INTO core_vault (source, type, val, timestamp) VALUES (?, ?, ?, ?)",
+                 (source, data.get("type", "DATA"), val, datetime.datetime.now()))
     conn.commit()
     conn.close()
     
     return jsonify({
-        "status": "LINKED",
-        "system": system_name,
-        "message": "Welcome to the Titanium Empire"
-    }), 200
+        "status": "SYNCED_WITH_CORE",
+        "system_mode": "MAX_MODE",
+        "payout_status": "IN-TRANSIT",
+        "engine": VERSION
+    }), 202
+
+# --- CORE ADMIN PANEL (A Teljes Birodalom Látképe) ---
+@app.route("/admin")
+def core_admin():
+    conn = sqlite3.connect(DB_PATH)
+    vault = conn.execute("SELECT * FROM core_vault ORDER BY timestamp DESC LIMIT 10").fetchall()
+    state = dict(conn.execute("SELECT * FROM system_state").fetchall())
+    total_val = conn.execute("SELECT SUM(val) FROM core_vault").fetchone()[0] or 0
+    conn.close()
+    
+    return render_template_string("""
+    <body style="background:#050505; color:#00ffcc; font-family:'Courier New', monospace; padding:30px;">
+        <h1 style="border-bottom: 2px solid #00ffcc;">💎 {{ version }} | KÉSZ RENDSZER</h1>
+        <div style="display:flex; gap:20px; margin-bottom:20px;">
+            <div style="border:1px solid #00ffcc; padding:15px; flex:1;">
+                <h3>RENDSZERÁLLAPOT</h3>
+                <p>MÓD: <span style="color:#fff;">{{ state['mode'] }}</span></p>
+                <p>STÁTUSZ: <span style="color:#fff;">{{ state['status'] }}</span></p>
+                <p>LIQUIDITY: <span style="color:#00ff00;">CONTINUOUS</span></p>
+            </div>
+            <div style="border:1px solid #00ffcc; padding:15px; flex:1;">
+                <h3>PÉNZÜGYI MONITOR</h3>
+                <p>VÁRHATÓ PROFIT: <span style="font-size:1.5em; color:#fff;">{{ total }} EUR</span></p>
+                <p>TOKEN STATUS: <span style="color:#00ff00;">ERC-20 STABLE</span></p>
+            </div>
+        </div>
+        <h3>AKTIVITÁSI NAPLÓ (CORE VAULT)</h3>
+        <ul>
+            {% for item in vault %}
+            <li>[{{ item[4][:19] }}] {{ item[1] }} >> {{ item[2] }} >> <b>{{ item[3] }} EUR</b></li>
+            {% endfor %}
+        </ul>
+    </body>
+    """, version=VERSION, state=state, total=total_val, vault=vault)
+
+@app.route("/")
+def health():
+    return "<h1>Titanium Core Nexus: ONLINE</h1>", 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))

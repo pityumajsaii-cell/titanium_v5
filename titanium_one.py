@@ -1,7 +1,7 @@
 import requests, time, random
 
 # CSERÉLD KI az URL-t a te aktuális éles címedre!
-TARGET_URL = "https://titanium-render-publi-yht5.onrender.com/api/bridge" 
+TARGET_URL = "https://A-TE-KOYEB-URL-ED.koyeb.app/api/bridge" 
 
 def start_hunting():
     print("🎯 Titanium One Vadászat elindítva...")
