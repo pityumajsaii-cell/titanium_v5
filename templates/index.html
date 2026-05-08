@@ -9,72 +9,44 @@
         :root { --primary: #00f2ff; --secondary: #7000ff; --dark: #050505; --card-bg: #111111; --text: #ffffff; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--dark); color: var(--text); overflow-x: hidden; }
-        
         nav { padding: 20px 8%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; background: rgba(0,0,0,0.9); position: sticky; top: 0; z-index: 1000; }
         .logo { font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; }
         .logo span { color: var(--primary); }
-
-        .hero { height: 70vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: radial-gradient(circle at center, #111 0%, #050505 100%); }
-        .hero h1 { font-size: 4rem; margin-bottom: 20px; text-transform: uppercase; letter-spacing: -2px; }
-        
+        .hero { height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: radial-gradient(circle at center, #111 0%, #050505 100%); }
+        .hero h1 { font-size: 3.5rem; margin-bottom: 20px; text-transform: uppercase; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 50px 8%; }
-        .card { background: var(--card-bg); padding: 40px; border-radius: 20px; border: 1px solid #222; transition: 0.4s; text-align: center; position: relative; }
-        .card:hover { border-color: var(--primary); transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,242,255,0.1); }
-        
+        .card { background: var(--card-bg); padding: 40px; border-radius: 20px; border: 1px solid #222; text-align: center; }
         .price { font-size: 3rem; font-weight: 800; margin: 20px 0; }
-        .price span { font-size: 1rem; color: #666; }
-        
-        ul { list-style: none; margin: 30px 0; text-align: left; }
-        li { margin-bottom: 12px; color: #aaa; font-size: 0.9rem; }
-        li i { color: var(--primary); margin-right: 10px; }
-        
-        .btn-pay { background: var(--text); color: #000; padding: 15px 30px; border-radius: 10px; text-decoration: none; font-weight: 800; display: block; margin-top: 20px; transition: 0.3s; }
-        .btn-pay:hover { background: var(--primary); transform: scale(1.05); }
-
-        .contact-section { padding: 100px 8%; background: #080808; text-align: center; }
-        form { max-width: 600px; margin: 40px auto; display: flex; flex-direction: column; gap: 15px; }
-        input, textarea { background: #111; border: 1px solid #333; padding: 15px; color: white; border-radius: 8px; }
-        .btn-submit { background: var(--secondary); color: white; border: none; padding: 15px; cursor: pointer; font-weight: 700; border-radius: 8px; }
+        .btn-pay { background: var(--text); color: #000; padding: 15px 30px; border-radius: 10px; text-decoration: none; font-weight: 800; display: block; margin-top: 20px; }
+        .contact-section { padding: 80px 8%; background: #080808; text-align: center; }
+        form { max-width: 500px; margin: 30px auto; display: flex; flex-direction: column; gap: 15px; }
+        input, textarea { background: #111; border: 1px solid #333; padding: 12px; color: white; border-radius: 5px; }
+        .btn-submit { background: var(--secondary); color: white; border: none; padding: 15px; cursor: pointer; font-weight: 700; }
     </style>
 </head>
 <body>
-    <nav>
-        <div class="logo">TITANIUM <span>V5.5</span></div>
-        <div style="color:#555; font-size:0.8rem;">ENTERPRISE GRADE</div>
-    </nav>
-
+    <nav><div class="logo">TITANIUM <span>V5.5</span></div></nav>
     <section class="hero">
-        <h1>Automated Security<br>Intelligence</h1>
-        <p style="color:#888;">Grok AI Powered Threat Analysis & Infrastructure Protection</p>
+        <h1>Automated Security</h1>
+        <p style="color:#888;">Grok AI Powered Protection</p>
     </section>
-
     <div class="grid">
         {% for product in products %}
         <div class="card">
             <h3 style="color:{{ product.color }}">{{ product.name }}</h3>
-            <div class="price">€{{ product.price }}<span>/hó</span></div>
-            <ul>
-                {% for feature in product.features %}
-                <li><i class="fas fa-check-circle"></i> {{ feature }}</li>
-                {% endfor %}
-            </ul>
-            <a href="{{ product.payment_url }}" class="btn-pay" target="_blank">Aktiválás</a>
+            <div class="price">€{{ product.price }}</div>
+            <a href="{{ product.payment_url }}" class="btn-pay">Aktiválás</a>
         </div>
         {% endfor %}
     </div>
-
     <section id="contact" class="contact-section">
-        <h2>Egyedi Ajánlat / AI Konzultáció</h2>
+        <h2>AI Konzultáció</h2>
         <form action="/lead" method="post">
-            <input type="text" name="name" placeholder="Teljes Név" required>
-            <input type="email" name="email" placeholder="Email Cím" required>
-            <textarea name="message" rows="5" placeholder="Miben segíthet a Titanium?" required></textarea>
-            <button type="submit" class="btn-submit">Üzenet Küldése</button>
+            <input type="text" name="name" placeholder="Név" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <textarea name="message" rows="4" placeholder="Üzenet" required></textarea>
+            <button type="submit" class="btn-submit">Küldés</button>
         </form>
     </section>
-
-    <footer style="padding: 50px; text-align: center; color: #333; font-size: 0.8rem;">
-        TITANIUM SYSTEM &copy; 2026 | Srv: d7ushrhkh4rs73ah0ih0
-    </footer>
 </body>
 </html>
