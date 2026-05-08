@@ -1,8 +1,6 @@
 ---
-title: Titanium Core Nexus
+title: Titanium Nexus Core
 emoji: 💎
-colorFrom: blue
-colorTo: green
 sdk: docker
-pinned: false
+port: 7860
 ---
