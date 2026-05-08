@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir fastapi uvicorn
 COPY . .
-CMD ["gunicorn", "--bind", "0.0.0.0:7860", "wsgi:app"]
+# A HF 7860-as portot vár, a FastAPI-t uvicorn-nal indítjuk
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
