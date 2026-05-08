@@ -7,3 +7,4 @@ nohup: ignoring input
  * Running on http://127.0.0.1:7860
  * Running on http://192.168.68.104:7860
 [33mPress CTRL+C to quit[0m
+Terminated                 python3 app.py
