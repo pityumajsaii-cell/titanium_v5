@@ -2,8 +2,6 @@ name: Sync to Hugging Face Hub
 on:
   push:
     branches: [main]
-  force_push:
-    branches: [main]
 
 jobs:
   deploy:
@@ -14,8 +12,9 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Push to HF
+      - name: Push to HF (Meglévő Space-re)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push --force https://pityumajsaii-cell:$HF_TOKEN@huggingface.co/spaces/pityumajsaii-cell/titanium-nexus main
+          # A meglévő repód neve a Hugging Face-en:
+          git push --force https://pityumajsaii-cell:$HF_TOKEN@huggingface.co/spaces/pityumajsaii-cell/titanium_v5 main
