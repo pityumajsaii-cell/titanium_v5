@@ -1,28 +1,22 @@
 from flask import Flask, request, jsonify
-import os, sqlite3, hmac, hashlib, json
+import os, hmac, hashlib
 
 app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SECRET', 'titanium_final_stable_2026')
 
-# --- CONFIG ---
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "TITANIUM_ADMIN_DEFAULT_2026")
-VERSION = "5.3.1-STABLE"
+VERSION = "5.3.2-STABLE"
 
-# --- GUARANTEED ROUTING ---
 @app.route('/')
 def index():
-    # Ezzel ellenőrizzük, hogy EZ a kód fut-e
-    return f"<h1>Titanium Engine v{VERSION}</h1><p>Status: Running</p>"
-
-@app.route('/version')
-def get_version():
-    return jsonify({"version": VERSION, "deploy_status": "synchronized"})
+    return f"<h1>Titanium V5.3 Online</h1><p>Version: {VERSION}</p>", 200
 
 @app.route('/admin/stats')
 def stats():
     auth = request.headers.get("Authorization", "")
     if auth != f"Bearer {ADMIN_TOKEN}":
         return jsonify({"error": "unauthorized"}), 401
-    return jsonify({"status": "active", "msg": "Database connected"})
+    return jsonify({"status": "ok", "version": VERSION, "message": "Admin Access Granted"})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
