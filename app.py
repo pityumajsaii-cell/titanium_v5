@@ -3,11 +3,11 @@ import os
 
 app = Flask(__name__)
 
-VERSION = "V5-FINAL-REBUILD"
+VERSION = "CLEAN-FINAL-V1"
 
 @app.route("/")
 def home():
-    return "TITANIUM OK", 200
+    return "TITANIUM LIVE OK", 200
 
 @app.route("/version")
 def version():
