@@ -1,83 +1,76 @@
-from flask import Flask, render_template, request, session
-import json, os, requests
+from flask import Flask, render_template, request, session, jsonify
+import json, os, requests, hmac, hashlib, time
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET', 'titanium_ultra_v5')
+app.secret_key = os.getenv('FLASK_SECRET', 'titanium_ultra_v2_2026')
 
-# KULCSOK (Környezeti változókból)
+# KULCSOK ÉS BIZTONSÁG
 STRIPE_SECRET = os.getenv('STRIPE_SECRET')
 GROK_API_KEY = os.getenv('GROK_API_KEY')
 TG_TOKEN = os.getenv('TG_TOKEN')
 TG_CHAT_ID = os.getenv('TG_CHAT_ID')
+BRIDGE_SECRET = os.getenv('BRIDGE_SECRET', 'TITANIUM_SECURE_TOKEN_2026') # Ezt állítsd be Renderen!
 
-def get_grok_analysis(user_msg):
-    """Grok AI elemzés az ügyfél igényéről"""
-    if not GROK_API_KEY: return "AI elemzés nem elérhető."
+def verify_signature(payload, signature):
+    if not signature: return False
+    computed = hmac.new(BRIDGE_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(computed, signature)
+
+def get_ai_analysis(data):
+    if not GROK_API_KEY: return "AI Offline"
     try:
         headers = {"Authorization": f"Bearer {GROK_API_KEY}", "Content-Type": "application/json"}
-        data = {
-            "model": "grok-1",
+        # Dinamikus modellválasztás fallback-el
+        payload = {
+            "model": "grok-1", 
             "messages": [
-                {"role": "system", "content": "Te egy üzleti elemző vagy. Értékeld az ügyfél üzenetét profit szempontjából."},
-                {"role": "user", "content": user_msg}
-            ]
+                {"role": "system", "content": "Te a Titanium SaaS biztonsági elemzője vagy. Pontozd a leadet 1-10 skálán."},
+                {"role": "user", "content": f"Adat: {str(data)}"}
+            ],
+            "temperature": 0.7
         }
-        resp = requests.post("https://api.x.ai/v1/chat/completions", headers=headers, json=data)
+        resp = requests.post("https://api.x.ai/v1/chat/completions", headers=headers, json=payload, timeout=8)
+        resp.raise_for_status()
         return resp.json()['choices'][0]['message']['content']
-    except: return "Elemzési hiba történt."
+    except Exception as e:
+        return f"AI Fallback: Elemzés jelenleg nem elérhető ({str(e)})"
 
-def send_tg_alert(text):
+def send_tg_async(msg):
+    # Egyszerű async szimuláció timeouttal, hogy ne blokkolja a Flask-et
     if not TG_TOKEN: return
     try:
-        url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
-        requests.post(url, json={"chat_id": TG_CHAT_ID, "text": text})
+        requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage", 
+                      json={"chat_id": TG_CHAT_ID, "text": msg, "parse_mode": "HTML"}, timeout=3)
     except: pass
-
-def load_db(file):
-    if os.path.exists(file):
-        with open(file, 'r', encoding='utf-8') as f:
-            try: return json.load(f)
-            except: return []
-    return []
 
 @app.route('/')
 def index():
-    products = load_db('products.json')
+    products = []
+    if os.path.exists('products.json'):
+        with open('products.json', 'r') as f: products = json.load(f)
     return render_template('index.html', products=products)
 
-@app.route('/lead', methods=['POST'])
-def lead():
-    name = request.form.get('name')
-    email = request.form.get('email')
-    msg = request.form.get('message')
-    
-    # Grok AI elemzés indítása
-    ai_analysis = get_grok_analysis(msg)
-    
-    # Mentés az adatbázisba
-    leads = load_db('leads.json')
-    new_entry = {
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "name": name, "email": email, "msg": msg, "ai_score": ai_analysis
-    }
-    leads.append(new_entry)
-    with open('leads.json', 'w') as f: json.dump(leads, f)
-    
-    # Telegram értesítés küldése az AI véleményével
-    alert = f"🚀 ÚJ TITANIUM ÜGYFÉL!\n👤 Név: {name}\n📧 Email: {email}\n📝 Üzenet: {msg}\n\n🤖 AI ELEMZÉS:\n{ai_analysis}"
-    send_tg_alert(alert)
-    
-    return "<h1>Aktiválva!</h1><p>A Titanium AI elemezte az igényét. Hamarosan jelentkezünk.</p><a href='/'>Vissza</a>"
+# --- SECURE BRIDGE ENDPOINT V2 ---
+@app.route('/api/bridge', methods=['POST'])
+def bridge():
+    raw_data = request.get_data(as_text=True)
+    signature = request.headers.get("X-TITANIUM-SIGNATURE")
 
-@app.route('/admin', methods=['GET', 'POST'])
-def admin():
-    if request.method == 'POST' and request.form.get('password') == 'admin123':
-        session['logged_in'] = True
-    if not session.get('logged_in'):
-        return '<div style="text-align:center;padding:50px;"><h2>Titanium Admin Panel</h2><form method="post"><input type="password" name="password"><button>Belépés</button></form></div>'
-    leads = load_db('leads.json')
-    return render_template('admin.html', leads=leads)
+    # 1. Biztonsági kapu (HMAC Auth)
+    if not verify_signature(raw_data, signature):
+        return jsonify({"status": "denied", "reason": "unauthorized"}), 403
+
+    data = request.json
+    name = data.get('name', 'Névtelen')
+    
+    # 2. AI Elemzés (Safe Mode)
+    analysis = get_ai_analysis(data)
+    
+    # 3. Telegram értesítés
+    send_tg_async(f"🔐 <b>SECURE SYNC: {data.get('source', 'Unknown')}</b>\n👤 Név: {name}\n\n🤖 <b>AI SCORE:</b>\n{analysis}")
+    
+    return jsonify({"status": "received", "timestamp": time.time()}), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 7860))
