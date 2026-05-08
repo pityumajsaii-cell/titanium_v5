@@ -1,19 +1,19 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 import os
 
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "TITANIUM LIVE OK", 200
+    return "TITANIUM OK", 200
 
 @app.route("/admin/stats")
 def stats():
-    return jsonify({"status": "ok", "service": "titanium", "route": "/admin/stats working"}), 200
+    return jsonify({"status": "ok", "route": "admin working"}), 200
 
 @app.route("/version")
 def version():
-    return jsonify({"version": "V5-FIX", "status": "stable"}), 200
+    return jsonify({"version": "RESET-FIX", "status": "online"}), 200
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
