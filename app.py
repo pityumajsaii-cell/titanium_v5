@@ -1,24 +1,25 @@
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
-app = FastAPI(title="Titanium SaaS Core", version="1.0")
+app = FastAPI()
 
 @app.get("/")
-def root():
+def home():
     return {
-        "status": "ONLINE",
-        "system": "Titanium CLEAN CORE SAAS",
-        "version": "v1",
-        "mode": "production_ready"
+        "system": "Titanium SaaS Core",
+        "status": "live",
+        "monetization": "stripe_ready_placeholder"
     }
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-@app.get("/api/status")
-def status():
-    return {
-        "service": "titanium-core",
-        "state": "running",
-        "deployment": "hf-space"
-    }
+@app.get("/pricing", response_class=HTMLResponse)
+def pricing():
+    return """
+    <h1>Titanium SaaS</h1>
+    <p>Starter Plan: $9/month</p>
+    <p>Pro Plan: $29/month</p>
+    <button>Buy (Stripe placeholder)</button>
+    """
