@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TITANIUM | Enterprise SaaS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #00f2ff; --secondary: #7000ff; --dark: #0a0a0b; --card-bg: #16161a; --text: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--dark); color: var(--text); }
+        nav { padding: 20px 5%; display: flex; justify-content: space-between; border-bottom: 1px solid #333; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 50px 5%; }
+        .card { background: var(--card-bg); padding: 40px; border-radius: 20px; border: 1px solid #333; transition: 0.3s; text-align: center; }
+        .price { font-size: 3rem; font-weight: 800; margin: 20px 0; }
+        .btn { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; padding: 15px; border-radius: 50px; display: block; text-decoration: none; font-weight: bold; }
+        ul { text-align: left; margin: 20px 0; list-style: none; color: #aaa; }
+        li { margin-bottom: 10px; }
+        li i { color: var(--primary); margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav><div style="font-size: 1.5rem; font-weight: 800;">TITANIUM <span style="color:var(--primary)">V5.5</span></div></nav>
+    <div class="grid">
+        {% for product in products %}
+        <div class="card" style="border-color: {{ product.color }}">
+            <h3>{{ product.name }}</h3>
+            <div class="price">{{ product.price }}€<span>/hó</span></div>
+            <ul>
+                {% for feature in product.features %}
+                <li><i class="fas fa-check"></i> {{ feature }}</li>
+                {% endfor %}
+            </ul>
+            <a href="#contact" class="btn">Kiválasztom</a>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[
+    {
+        "id": "starter",
+        "name": "Starter Protection",
+        "price": "49",
+        "features": ["Alap monitorozás", "Automatizált jelentés", "Biztonsági audit"],
+        "color": "#00f2ff",
+        "payment_url": "https://buy.stripe.com/28EeVfeqwfKA0Y33Gv9IQ03"
+    },
+    {
+        "id": "pro",
+        "name": "Business Pro",
+        "price": "149",
+        "features": ["24/7 Élő Grok AI Védelem", "Real-time Dashboard", "Prioritásos támogatás"],
+        "color": "#7000ff",
+        "payment_url": "https://buy.stripe.com/28EeVfeqwfKA0Y33Gv9IQ03"
+    },
+    {
+        "id": "enterprise",
+        "name": "Titanium Enterprise",
+        "price": "499",
+        "features": ["Teljes Infrastruktúra Védelem", "Egyedi AI fejlesztés", "Korlátlan licenc"],
+        "color": "#ffffff",
+        "payment_url": "https://buy.stripe.com/28EeVfeqwfKA0Y33Gv9IQ03"
+    }
+]

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>TITANIUM | Admin Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background: #0a0a0b; color: white; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #333; text-align: left; }
+        th { background: #7000ff; }
+        tr:nth-child(even) { background: #16161a; }
+    </style>
+</head>
+<body>
+    <h1>Ügyfél Érdeklődések</h1>
+    <table>
+        <tr><th>Időpont</th><th>Név</th><th>Email</th><th>Üzenet</th></tr>
+        {% for lead in leads %}
+        <tr><td>{{ lead.date }}</td><td>{{ lead.name }}</td><td>{{ lead.email }}</td><td>{{ lead.message }}</td></tr>
+        {% endfor %}
+    </table>
+    <br><a href="/" style="color:#00f2ff;">Vissza a főoldalra</a>
+</body>
+</html>
