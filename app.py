@@ -4,8 +4,12 @@ app = FastAPI()
 
 @app.get("/")
 def root():
-    return {"status": "ONLINE", "system": "Titanium V44 CLEAN"}
+    return {
+        "status": "ONLINE",
+        "system": "Titanium CLEAN REBOOT",
+        "hf": "recovered"
+    }
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "runtime": "hf-fastapi"}
+    return {"status": "ok"}
