@@ -3,7 +3,7 @@ import os
 
 app = Flask(__name__)
 
-VERSION = "STABLE-1.0"
+VERSION = "V6-STABLE"
 
 @app.route("/")
 def home():
@@ -11,16 +11,21 @@ def home():
 
 @app.route("/version")
 def version():
-    return jsonify({"version": VERSION, "status": "online"}), 200
+    return jsonify({
+        "status": "online",
+        "version": VERSION
+    }), 200
 
 @app.route("/admin/stats")
 def stats():
     return jsonify({
         "status": "ok",
-        "route": "working",
+        "service": "titanium",
         "version": VERSION
     }), 200
 
+
+# IMPORTANT: Render uses gunicorn, this is only local fallback
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
