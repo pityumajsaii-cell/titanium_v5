@@ -1,5 +1,5 @@
 services:
   - type: worker
-    name: titanium-v8-cloud
+    name: titanium-v9-video-factory
     env: docker
     plan: free
