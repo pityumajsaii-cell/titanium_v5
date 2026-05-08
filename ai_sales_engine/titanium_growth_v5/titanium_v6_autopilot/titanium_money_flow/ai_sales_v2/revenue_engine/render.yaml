@@ -1,0 +1,5 @@
+services:
+  - type: worker
+    name: titanium-v8-cloud
+    env: docker
+    plan: free
