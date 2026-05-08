@@ -1,74 +1,81 @@
 from flask import Flask, request, jsonify
-import os, requests, sqlite3
+import os, requests, sqlite3, jwt, datetime, stripe
+from functools import wraps
 
 app = Flask(__name__)
 
-# =====================
-# CONFIG
-# =====================
-VERSION = "TITANIUM-SAAS-V1-STABLE"
+# --- CONFIG ---
+VERSION = "TITANIUM-SAAS-V2-PRO"
+SECRET_KEY = os.getenv("FLASK_SECRET", "titanium_ultra_secret_2026")
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "dev")
-GROK_KEY = os.getenv("GROK_API_KEY")
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
-DB_PATH = "titanium.db"
+STRIPE_SECRET = os.getenv("STRIPE_SECRET")
+DB_PATH = "titanium_v2.db"
 
-# =====================
-# DB INIT
-# =====================
+stripe.api_key = STRIPE_SECRET
+
+# --- DB INIT ---
 def init_db():
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, amount TEXT, email TEXT)")
+    conn.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT, plan TEXT, active INTEGER)")
+    conn.execute("CREATE TABLE IF NOT EXISTS revenue (id INTEGER PRIMARY KEY, amount REAL, currency TEXT, date TEXT)")
     conn.commit()
     conn.close()
 
 init_db()
 
-# =====================
-# ROUTES
-# =====================
+# --- AUTH DECORATOR ---
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get("Authorization")
+        if not token or "Bearer " not in token:
+            return jsonify({"error": "Missing token"}), 401
+        try:
+            jwt.decode(token.split(" ")[1], SECRET_KEY, algorithms=["HS256"])
+        except:
+            return jsonify({"error": "Invalid token"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+# --- ROUTES ---
 @app.route("/")
-def home():
-    return jsonify({"status": "online", "engine": VERSION, "author": "Titanium"})
+def health():
+    return jsonify({"engine": VERSION, "status": "gold_standard"})
 
-@app.route("/admin/stats")
-def admin():
-    if request.headers.get("Authorization") != f"Bearer {ADMIN_TOKEN}":
-        return jsonify({"error": "unauthorized"}), 401
+@app.route("/auth/login", methods=["POST"])
+def login():
+    # Egyszerűsített login az admin tokeneddel
+    auth_data = request.json
+    if auth_data.get("token") == ADMIN_TOKEN:
+        token = jwt.encode({
+            "user": "admin",
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        }, SECRET_KEY, algorithm="HS256")
+        return jsonify({"token": token})
+    return jsonify({"error": "Forbidden"}), 403
+
+@app.route("/admin/revenue")
+@token_required
+def get_revenue():
     conn = sqlite3.connect(DB_PATH)
-    count = conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
+    total = conn.execute("SELECT SUM(amount) FROM revenue").fetchone()[0] or 0
     conn.close()
-    return jsonify({"status": "ok", "total_payments": count})
+    return jsonify({"total_revenue_eur": total, "currency": "EUR"})
 
-@app.route("/ai", methods=["POST"])
-def ai():
-    prompt = request.json.get("prompt", "Hello")
-    # GROK -> OPENAI Fallback logic
-    if GROK_KEY:
-        try:
-            r = requests.post("https://api.x.ai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {GROK_KEY}"},
-                json={"messages": [{"role": "user", "content": prompt}]}, timeout=10)
-            return jsonify({"source": "grok", "data": r.json()})
-        except: pass
-    if OPENAI_KEY:
-        try:
-            r = requests.post("https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {OPENAI_KEY}"},
-                json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}]})
-            return jsonify({"source": "openai", "data": r.json()})
-        except: pass
-    return jsonify({"error": "AI engines offline"}), 500
-
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    data = request.get_json(silent=True) or {}
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("INSERT INTO payments (amount, email) VALUES (?, ?)", 
-                 (str(data.get("amount", "0")), data.get("email", "unknown")))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success"})
+@app.route("/webhook/stripe", methods=["POST"])
+def stripe_webhook():
+    # Ide jön a Stripe esemény feldolgozása
+    data = request.json
+    # Példa: ha sikeres a fizetés, rögzítjük a bevételt
+    if data.get("type") == "checkout.session.completed":
+        session = data["data"]["object"]
+        amount = session["amount_total"] / 100
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("INSERT INTO revenue (amount, currency, date) VALUES (?, ?, ?)",
+                     (amount, session["currency"], datetime.datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    return jsonify({"received": True})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
