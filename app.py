@@ -4,7 +4,7 @@ app = FastAPI()
 
 @app.get("/")
 def root():
-    return {"status": "OK", "system": "Titanium V44 LIVE"}
+    return {"status": "ONLINE", "system": "Titanium V44"}
 
 @app.get("/health")
 def health():
