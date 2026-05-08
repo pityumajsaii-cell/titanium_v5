@@ -2,11 +2,10 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-@app.get('/')
+@app.get("/")
 def root():
-    return {'status': 'OK'}
+    return {"status": "OK", "system": "Titanium V44 REAL"}
 
-@app.get('/health')
+@app.get("/health")
 def health():
-    return {'status': 'ok'}
-
+    return {"status": "ok"}
