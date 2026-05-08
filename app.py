@@ -3,7 +3,7 @@ import os
 
 app = Flask(__name__)
 
-VERSION = "CLEAN-FINAL-V1"
+VERSION = "STABLE-1.0"
 
 @app.route("/")
 def home():
@@ -11,16 +11,13 @@ def home():
 
 @app.route("/version")
 def version():
-    return jsonify({
-        "status": "online",
-        "version": VERSION
-    }), 200
+    return jsonify({"version": VERSION, "status": "online"}), 200
 
 @app.route("/admin/stats")
 def stats():
     return jsonify({
         "status": "ok",
-        "route": "admin working",
+        "route": "working",
         "version": VERSION
     }), 200
 
