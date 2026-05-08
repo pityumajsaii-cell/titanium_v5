@@ -50,3 +50,20 @@ while true; do
     echo -e "\e[1;33m[VÁRAKOZÁS]\e[0m Következő bányászati ciklus..."
     sleep 1800 # 30 perc szünet a blokkolás elkerülésére
 done
+
+# --- VIDEO FACTORY MODULE ---
+while true; do
+    echo "[VIDEO] Új üzleti videó generálása..."
+    # Gemini generál egy ütős szöveget a videóhoz
+    VIDEO_TEXT=$(curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{ \"contents\": [{\"parts\":[{\"text\": \"Write a 15-word aggressive business growth tip for a YouTube Short about AI automation.\"}]}] }" | jq -r '.candidates[0].content.parts[0].text')
+
+    python3 video_factory.py "$VIDEO_TEXT" "daily_upload.mp4"
+    
+    # Itt hívjuk meg a feltöltő scriptet (YouTube API-n keresztül)
+    echo "A videó elkészült: daily_upload.mp4. Feltöltés folyamatban..."
+    
+    # 3 óra várakozás a következő videóig (24/3 = 8 videó naponta)
+    sleep 10800 
+done
