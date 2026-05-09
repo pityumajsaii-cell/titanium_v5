@@ -1,11 +1,9 @@
 services:
   - type: web
-    name: titanium-nexus-v5
+    name: titanium-ai-saas
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT
+    startCommand: uvicorn production_stack.backend.app:app --host 0.0.0.0 --port 10000
     envVars:
-      - key: ADMIN_TOKEN
-        value: dev
-      - key: FLASK_SECRET
-        sync: false
+      - key: PYTHON_VERSION
+        value: 3.13.0
