@@ -4,19 +4,19 @@ import uuid
 import os
 import stripe
 
-app = FastAPI(title="Titanium V6 Clean Growth Engine")
+app = FastAPI(title="Titanium V7 Final Autonomous Revenue System")
 
 # =========================
-# STRIPE CONFIG
+# CONFIG
 # =========================
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 # =========================
-# DB CORE (CLEAN STATE)
+# DATABASE (CLEAN CRM CORE)
 # =========================
-DB = sqlite3.connect("titanium_v6.db", check_same_thread=False)
+DB = sqlite3.connect("titanium_v7.db", check_same_thread=False)
 CUR = DB.cursor()
 
 CUR.execute("""
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS events (
 DB.commit()
 
 # =========================
-# LEAD SOURCE (PLUGIN READY)
+# LEAD SOURCE (PLUG-IN READY)
 # =========================
 def get_leads():
     return [
@@ -47,7 +47,7 @@ def get_leads():
     ]
 
 # =========================
-# AI DECISION ENGINE
+# AI SALES DECISION ENGINE
 # =========================
 def ai_decide(msg: str):
     msg = msg.lower()
@@ -74,17 +74,23 @@ def leads_auto():
     return {"generated": len(leads)}
 
 # =========================
-# AI MESSAGE
+# AI MESSAGE GENERATOR
 # =========================
 @app.post("/ai/message")
 async def ai_message(req: Request):
     data = await req.json()
     return {
-        "email": f"Hi {data.get(company)} - AI automation can increase your revenue."
+        "email": f"""
+Hi {data.get(company)},
+
+We help businesses automate revenue using AI systems.
+
+Interested in a quick demo?
+"""
     }
 
 # =========================
-# AI REPLY
+# AI REPLY ENGINE
 # =========================
 @app.post("/ai/reply")
 async def ai_reply(req: Request):
@@ -92,7 +98,7 @@ async def ai_reply(req: Request):
     return {"decision": ai_decide(data.get("message", ""))}
 
 # =========================
-# CHECKOUT
+# STRIPE CHECKOUT
 # =========================
 @app.post("/checkout")
 async def checkout():
@@ -103,11 +109,10 @@ async def checkout():
         success_url="https://example.com/success",
         cancel_url="https://example.com/cancel"
     )
-
     return {"url": session.url}
 
 # =========================
-# WEBHOOK (CLEAN + SAFE)
+# WEBHOOK (REVENUE CLOSE LOOP)
 # =========================
 @app.post("/webhook")
 async def webhook(req: Request):
@@ -126,7 +131,7 @@ async def webhook(req: Request):
         )
         DB.commit()
 
-        print("CLOSED:", email)
+        print("💰 CLOSED DEAL:", email)
 
     return {"status": "ok"}
 

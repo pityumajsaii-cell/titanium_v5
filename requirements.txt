@@ -4,5 +4,4 @@ stripe
 requests
 beautifulsoup4
 lxml
-sqlite-utils
 python-dotenv

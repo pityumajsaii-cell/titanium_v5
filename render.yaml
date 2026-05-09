@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: titanium-v6-clean-growth
+    name: titanium-v7-final-system
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
