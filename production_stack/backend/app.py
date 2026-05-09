@@ -1,94 +1,75 @@
 from fastapi import FastAPI, Request
-import os
-import stripe
 import sqlite3
 import uuid
+import stripe
+import os
+import requests
+from bs4 import BeautifulSoup
 
-app = FastAPI(title="Titanium V3 Autonomous Revenue Engine")
+app = FastAPI(title="Titanium V4 Autonomous Engine")
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 # =========================
-# DATABASE (PERSISTENT CRM)
+# DB
 # =========================
-conn = sqlite3.connect("crm.db", check_same_thread=False)
-cursor = conn.cursor()
+DB = sqlite3.connect("titanium_v4.db", check_same_thread=False)
+CUR = DB.cursor()
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS leads (
-    id TEXT PRIMARY KEY,
-    email TEXT,
-    company TEXT,
-    status TEXT
-)
-""")
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS payments (
-    id TEXT PRIMARY KEY,
-    email TEXT,
-    status TEXT
-)
-""")
-
-conn.commit()
+CUR.execute("CREATE TABLE IF NOT EXISTS leads (id TEXT, email TEXT, company TEXT, status TEXT)")
+CUR.execute("CREATE TABLE IF NOT EXISTS events (id TEXT, type TEXT, data TEXT)")
+DB.commit()
 
 # =========================
-# AI LOGIC (SIMPLE AUTONOMOUS DECISION ENGINE)
+# SCRAPER (SIMPLE BASE)
 # =========================
-def ai_decision(message: str):
-    msg = message.lower()
-    if "interested" in msg or "yes" in msg:
+def scrape_leads():
+    return [{"email": "demo@company.com", "company": "DemoCorp"}]
+
+# =========================
+# AI LOGIC
+# =========================
+def ai_decision(msg: str):
+    msg = msg.lower()
+    if "yes" in msg or "interested" in msg:
         return "close"
-    return "follow_up"
+    if "maybe" in msg:
+        return "follow_up"
+    return "nurture"
 
 # =========================
-# ROOT
+# LEADS AUTO
 # =========================
-@app.get("/")
-def root():
-    return {"system": "titanium_v3", "status": "autonomous"}
+@app.get("/leads/auto")
+def leads_auto():
+    leads = scrape_leads()
+
+    for l in leads:
+        CUR.execute(
+            "INSERT INTO leads VALUES (?, ?, ?, ?)",
+            (str(uuid.uuid4()), l["email"], l["company"], "new")
+        )
+
+    DB.commit()
+    return {"generated": len(leads)}
 
 # =========================
-# LEAD CREATE
-# =========================
-@app.post("/lead/new")
-async def lead_new(request: Request):
-    data = await request.json()
-    lead_id = str(uuid.uuid4())
-
-    cursor.execute(
-        "INSERT INTO leads VALUES (?, ?, ?, ?)",
-        (lead_id, data.get("email"), data.get("company"), "new")
-    )
-    conn.commit()
-
-    return {"lead_id": lead_id, "status": "created"}
-
-# =========================
-# AI MESSAGE GENERATOR
+# AI MESSAGE
 # =========================
 @app.post("/ai/message")
 async def ai_message(request: Request):
     data = await request.json()
-    company = data.get("company", "Company")
-
-    return {
-        "message": f"Hi {company}, we help automate your sales using AI agents. Interested?"
-    }
+    return {"message": f"Hi {data.get(company)} - AI automation can grow your revenue."}
 
 # =========================
-# AI REPLY ENGINE
+# AI REPLY
 # =========================
 @app.post("/ai/reply")
 async def ai_reply(request: Request):
     data = await request.json()
-
-    decision = ai_decision(data.get("message", ""))
-
-    return {"decision": decision}
+    return {"decision": ai_decision(data.get("message", ""))}
 
 # =========================
 # STRIPE CHECKOUT
@@ -98,61 +79,42 @@ async def checkout():
     session = stripe.checkout.Session.create(
         mode="subscription",
         payment_method_types=["card"],
-        line_items=[{
-            "price": PRICE_ID,
-            "quantity": 1
-        }],
+        line_items=[{"price": PRICE_ID, "quantity": 1}],
         success_url="https://example.com/success",
         cancel_url="https://example.com/cancel"
     )
-
     return {"url": session.url}
 
 # =========================
-# WEBHOOK (AUTONOM CLOSING LOOP)
+# WEBHOOK
 # =========================
 @app.post("/webhook")
 async def webhook(request: Request):
     payload = await request.body()
     sig = request.headers.get("stripe-signature")
 
-    try:
-        event = stripe.Webhook.construct_event(
-            payload,
-            sig,
-            WEBHOOK_SECRET
-        )
-    except Exception as e:
-        return {"error": str(e)}
+    event = stripe.Webhook.construct_event(payload, sig, WEBHOOK_SECRET)
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         email = session.get("customer_details", {}).get("email")
 
-        payment_id = str(uuid.uuid4())
-
-        cursor.execute(
-            "INSERT INTO payments VALUES (?, ?, ?)",
-            (payment_id, email, "paid")
+        CUR.execute(
+            "INSERT INTO events VALUES (?, ?, ?)",
+            (str(uuid.uuid4()), "payment", email)
         )
-        conn.commit()
+        DB.commit()
 
-        print("AUTO CLOSE:", email)
+        print("PAYMENT CLOSED:", email)
 
     return {"status": "ok"}
 
 # =========================
-# CRM VIEW
+# CRM
 # =========================
 @app.get("/crm")
 def crm():
-    cursor.execute("SELECT * FROM leads")
-    leads = cursor.fetchall()
+    leads = CUR.execute("SELECT * FROM leads").fetchall()
+    events = CUR.execute("SELECT * FROM events").fetchall()
 
-    cursor.execute("SELECT * FROM payments")
-    payments = cursor.fetchall()
-
-    return {
-        "leads": leads,
-        "payments": payments
-    }
+    return {"leads": leads, "events": events}

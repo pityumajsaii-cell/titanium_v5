@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: titanium-v3-autonomous-sales
+    name: titanium-v4-autonomous-sales
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt

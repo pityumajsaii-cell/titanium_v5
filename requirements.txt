@@ -1,5 +1,8 @@
 fastapi
 uvicorn[standard]
 stripe
-python-dotenv
+requests
+beautifulsoup4
+lxml
 sqlite-utils
+python-dotenv
