@@ -4,5 +4,4 @@ python-dotenv
 requests
 httpx
 stripe
-supabase
 pydantic
