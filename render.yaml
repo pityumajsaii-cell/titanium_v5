@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: titanium-ai-sales-agent
+    name: titanium-stripe-engine
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt

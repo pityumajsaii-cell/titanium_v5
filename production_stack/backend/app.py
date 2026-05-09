@@ -1,120 +1,75 @@
 from fastapi import FastAPI, Request
-import uuid
+import os
+import stripe
 
-app = FastAPI(title="Titanium Autonomous Sales Agent")
+app = FastAPI(title="Titanium Stripe Revenue Engine")
 
-# ---------------- MEMORY (simple in-memory CRM) ----------------
-LEADS = {}
-CONVERSATIONS = {}
+# ENV
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
-# ---------------- HEALTH ----------------
+# MEMORY CRM
+USERS = {}
+
+# ---------------- CORE ----------------
 @app.get("/")
 def root():
-    return {"system": "titanium_sales_agent", "status": "online"}
+    return {"status": "online", "system": "titanium_stripe_engine"}
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-# ---------------- LEAD INTAKE ----------------
-@app.post("/lead/new")
-async def new_lead(request: Request):
-    data = await request.json()
-    lead_id = str(uuid.uuid4())
+# ---------------- CHECKOUT ----------------
+@app.post("/checkout")
+async def checkout():
+    session = stripe.checkout.Session.create(
+        mode="subscription",
+        payment_method_types=["card"],
+        line_items=[{
+            "price": PRICE_ID,
+            "quantity": 1
+        }],
+        success_url="https://example.com/success",
+        cancel_url="https://example.com/cancel"
+    )
+    return {"url": session.url}
 
-    LEADS[lead_id] = {
-        "email": data.get("email"),
-        "company": data.get("company"),
-        "status": "new"
-    }
+# ---------------- WEBHOOK (CRITICAL) ----------------
+@app.post("/webhook")
+async def webhook(request: Request):
+    payload = await request.body()
+    sig = request.headers.get("stripe-signature")
 
-    return {"lead_id": lead_id, "status": "created"}
+    try:
+        event = stripe.Webhook.construct_event(
+            payload,
+            sig,
+            WEBHOOK_SECRET
+        )
+    except Exception as e:
+        return {"error": str(e)}
 
-# ---------------- AI EMAIL GENERATOR ----------------
-@app.post("/agent/email")
-async def generate_email(request: Request):
-    data = await request.json()
-    company = data.get("company", "Company")
+    # PAYMENT SUCCESS
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        customer = session.get("customer")
 
-    email = f"""
-Subject: AI automation for {company}
+        USERS[customer] = {
+            "status": "paid",
+            "session": session
+        }
 
-Hi {company},
+        print("PAYMENT SUCCESS:", customer)
 
-We help companies automate their sales process using AI agents.
+    # PAYMENT FAILED
+    if event["type"] == "invoice.payment_failed":
+        print("PAYMENT FAILED")
 
-This includes:
-- lead generation
-- follow-up automation
-- conversion optimization
+    return {"status": "received"}
 
-Would you like a quick demo?
-
-Best,
-Titanium AI Sales Agent
-"""
-    return {"email": email}
-
-# ---------------- SEND EMAIL (SIMULATED HOOK) ----------------
-@app.post("/agent/send")
-async def send_email(request: Request):
-    data = await request.json()
-    lead_id = data.get("lead_id")
-
-    if lead_id in LEADS:
-        LEADS[lead_id]["status"] = "contacted"
-
-    return {"status": "sent", "lead_id": lead_id}
-
-# ---------------- INBOUND REPLY HANDLER ----------------
-@app.post("/agent/reply")
-async def handle_reply(request: Request):
-    data = await request.json()
-    lead_id = data.get("lead_id")
-    message = data.get("message")
-
-    CONVERSATIONS.setdefault(lead_id, []).append({
-        "from": "client",
-        "message": message
-    })
-
-    # simple AI decision logic
-    if "yes" in message.lower() or "interested" in message.lower():
-        LEADS[lead_id]["status"] = "qualified"
-        return {"action": "send_checkout"}
-
-    return {"action": "follow_up"}
-
-# ---------------- FOLLOW UP ENGINE ----------------
-@app.get("/agent/followups")
-def followups():
-    return {
-        "sequence": [
-            "Day 1: Intro email",
-            "Day 3: Value follow-up",
-            "Day 7: Case study",
-            "Day 14: Final offer"
-        ]
-    }
-
-# ---------------- STRIPE CLOSE ----------------
-@app.post("/agent/close")
-async def close_deal(request: Request):
-    data = await request.json()
-    lead_id = data.get("lead_id")
-
-    if lead_id in LEADS:
-        LEADS[lead_id]["status"] = "closed"
-
-    return {
-        "checkout_url": "https://stripe-checkout-session-placeholder",
-        "status": "closing"
-    }
-
-# ---------------- CRM VIEW ----------------
-@app.get("/crm")
-def crm():
-    return {
-        "leads": LEADS,
-        "conversations": CONVERSATIONS
-    }
+# ---------------- STATUS CHECK ----------------
+@app.get("/users")
+def users():
+    return USERS
