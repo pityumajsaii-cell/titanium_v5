@@ -1,55 +1,69 @@
 from fastapi import FastAPI, Request
 import os
-import json
 
-app = FastAPI(title="Titanium AI Sales Engine")
+app = FastAPI(title="Titanium Revenue Engine")
 
-# ---------------- CORE ----------------
+# ---------------- HEALTH ----------------
 @app.get("/")
 def root():
-    return {"system": "titanium_ai_sales_engine", "status": "online"}
+    return {"system": "titanium_revenue_engine", "status": "online"}
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-# ---------------- LEAD GENERATION ----------------
-@app.get("/leads/generate")
-def generate_leads():
-    leads = [
-        {"name": "Startup A", "email": "contact@startupa.com", "interest": "AI automation"},
-        {"name": "Company B", "email": "hello@companyb.com", "interest": "SaaS scaling"},
-        {"name": "Agency C", "email": "info@agencyc.com", "interest": "lead generation"},
-    ]
-    return {"leads": leads}
+# ---------------- LEAD INTAKE (SAFE) ----------------
+@app.post("/leads/import")
+async def import_leads(request: Request):
+    data = await request.json()
+    return {
+        "status": "received",
+        "leads_count": len(data.get("leads", []))
+    }
 
 # ---------------- AI SALES MESSAGE ----------------
-@app.post("/sales/message")
-async def sales_message(request: Request):
+@app.post("/ai/offer")
+async def ai_offer(request: Request):
     data = await request.json()
-    company = data.get("company", "Unknown")
+    company = data.get("company", "Company")
 
     message = f"""
 Hi {company},
 
-We help automate your sales pipeline using AI agents that generate leads, qualify prospects, and close deals automatically.
+We help automate your sales and customer acquisition using AI systems.
+
+This includes:
+- lead handling automation
+- follow-up sequences
+- conversion tracking
 
 Would you like a demo?
 
-- Titanium AI Sales Engine
+- Titanium AI Revenue Engine
 """
-
     return {"message": message}
 
-# ---------------- CRM LOG ----------------
-SALES_LOG = []
+# ---------------- FOLLOW-UP ENGINE (LOGIC ONLY) ----------------
+@app.post("/followup/sequence")
+async def followup(request: Request):
+    return {
+        "sequence": [
+            "Day 1: Intro email",
+            "Day 3: Follow-up",
+            "Day 7: Case study",
+            "Day 14: Final offer"
+        ]
+    }
 
-@app.post("/crm/log")
-async def crm_log(request: Request):
-    data = await request.json()
-    SALES_LOG.append(data)
-    return {"status": "logged", "total": len(SALES_LOG)}
+# ---------------- STRIPE ----------------
+@app.post("/checkout")
+async def checkout():
+    return {
+        "url": "https://stripe-checkout-session-placeholder"
+    }
 
-@app.get("/crm/all")
-def crm_all():
-    return {"crm": SALES_LOG}
+@app.post("/webhook")
+async def webhook(request: Request):
+    body = await request.body()
+    print("PAYMENT EVENT:", body)
+    return {"status": "ok"}
