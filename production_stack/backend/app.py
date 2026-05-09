@@ -1,3 +1,4 @@
+from production_stack.backend.health import router as health_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uuid
@@ -149,3 +150,6 @@ def stats():
         "events": len(EVENTS),
         "system": "ONLINE"
     }
+
+
+app.include_router(health_router)

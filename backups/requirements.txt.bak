@@ -1,9 +1,9 @@
 fastapi
 uvicorn[standard]
-gunicorn
 python-multipart
 python-dotenv
 pydantic
+pydantic-settings
 httpx
 requests
 openai
@@ -16,3 +16,5 @@ jinja2
 aiofiles
 websockets
 orjson
+ujson
+gunicorn

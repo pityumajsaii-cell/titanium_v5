@@ -1,4 +1,10 @@
 __pycache__/
 *.pyc
-*.log
 .env
+*.log
+*_log.txt
+logs/
+*.db
+.cache/
+.vscode/
+.DS_Store
