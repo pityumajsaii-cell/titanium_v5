@@ -1,31 +1,97 @@
 from fastapi import FastAPI, Request
 import os
 import stripe
+import sqlite3
+import uuid
 
-app = FastAPI(title="Titanium Master Stable System")
+app = FastAPI(title="Titanium V3 Autonomous Revenue Engine")
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 # =========================
-# SAFE CRM (memory based)
+# DATABASE (PERSISTENT CRM)
 # =========================
-CRM = {}
+conn = sqlite3.connect("crm.db", check_same_thread=False)
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS leads (
+    id TEXT PRIMARY KEY,
+    email TEXT,
+    company TEXT,
+    status TEXT
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS payments (
+    id TEXT PRIMARY KEY,
+    email TEXT,
+    status TEXT
+)
+""")
+
+conn.commit()
 
 # =========================
-# CORE
+# AI LOGIC (SIMPLE AUTONOMOUS DECISION ENGINE)
+# =========================
+def ai_decision(message: str):
+    msg = message.lower()
+    if "interested" in msg or "yes" in msg:
+        return "close"
+    return "follow_up"
+
+# =========================
+# ROOT
 # =========================
 @app.get("/")
 def root():
-    return {"status": "online", "system": "titanium_master"}
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+    return {"system": "titanium_v3", "status": "autonomous"}
 
 # =========================
-# CHECKOUT
+# LEAD CREATE
+# =========================
+@app.post("/lead/new")
+async def lead_new(request: Request):
+    data = await request.json()
+    lead_id = str(uuid.uuid4())
+
+    cursor.execute(
+        "INSERT INTO leads VALUES (?, ?, ?, ?)",
+        (lead_id, data.get("email"), data.get("company"), "new")
+    )
+    conn.commit()
+
+    return {"lead_id": lead_id, "status": "created"}
+
+# =========================
+# AI MESSAGE GENERATOR
+# =========================
+@app.post("/ai/message")
+async def ai_message(request: Request):
+    data = await request.json()
+    company = data.get("company", "Company")
+
+    return {
+        "message": f"Hi {company}, we help automate your sales using AI agents. Interested?"
+    }
+
+# =========================
+# AI REPLY ENGINE
+# =========================
+@app.post("/ai/reply")
+async def ai_reply(request: Request):
+    data = await request.json()
+
+    decision = ai_decision(data.get("message", ""))
+
+    return {"decision": decision}
+
+# =========================
+# STRIPE CHECKOUT
 # =========================
 @app.post("/checkout")
 async def checkout():
@@ -39,10 +105,11 @@ async def checkout():
         success_url="https://example.com/success",
         cancel_url="https://example.com/cancel"
     )
+
     return {"url": session.url}
 
 # =========================
-# WEBHOOK (STABLE)
+# WEBHOOK (AUTONOM CLOSING LOOP)
 # =========================
 @app.post("/webhook")
 async def webhook(request: Request):
@@ -60,22 +127,32 @@ async def webhook(request: Request):
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
-
-        session_id = session.get("id")
         email = session.get("customer_details", {}).get("email")
 
-        CRM[session_id] = {
-            "email": email,
-            "status": "paid"
-        }
+        payment_id = str(uuid.uuid4())
 
-        print("PAYMENT OK:", email)
+        cursor.execute(
+            "INSERT INTO payments VALUES (?, ?, ?)",
+            (payment_id, email, "paid")
+        )
+        conn.commit()
 
-    return {"status": "received"}
+        print("AUTO CLOSE:", email)
+
+    return {"status": "ok"}
 
 # =========================
 # CRM VIEW
 # =========================
 @app.get("/crm")
 def crm():
-    return CRM
+    cursor.execute("SELECT * FROM leads")
+    leads = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM payments")
+    payments = cursor.fetchall()
+
+    return {
+        "leads": leads,
+        "payments": payments
+    }
