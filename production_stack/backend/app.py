@@ -4,7 +4,7 @@ import uuid
 import os
 import stripe
 
-app = FastAPI(title="Titanium V8 Autonomous Revenue Engine")
+app = FastAPI(title="Titanium V9 Autonomous Sales Core")
 
 # =========================
 # STRIPE CONFIG
@@ -14,9 +14,9 @@ WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 # =========================
-# DB (CRM CORE)
+# DATABASE (STATEFUL CRM)
 # =========================
-DB = sqlite3.connect("titanium_v8.db", check_same_thread=False)
+DB = sqlite3.connect("titanium_v9.db", check_same_thread=False)
 CUR = DB.cursor()
 
 CUR.execute("""
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS events (
 DB.commit()
 
 # =========================
-# LEAD GENERATOR (PLUG-IN READY)
+# LEAD SOURCE (PLUG-IN)
 # =========================
 def get_leads():
     return [
@@ -47,18 +47,20 @@ def get_leads():
     ]
 
 # =========================
-# AI DECISION ENGINE
+# AI SALES DECISION ENGINE
 # =========================
 def ai_decide(msg: str):
     msg = msg.lower()
     if "yes" in msg or "interested" in msg:
         return "close"
+    if "price" in msg:
+        return "nurture"
     if "no" in msg:
         return "stop"
     return "follow_up"
 
 # =========================
-# LEAD INGESTION
+# LEAD INGEST
 # =========================
 @app.get("/leads/auto")
 def leads_auto():
@@ -74,25 +76,27 @@ def leads_auto():
     return {"generated": len(leads)}
 
 # =========================
-# AI OUTREACH MESSAGE
+# AI EMAIL GENERATION (HOOK ONLY)
 # =========================
 @app.post("/ai/message")
 async def ai_message(req: Request):
     data = await req.json()
     return {
-        "email": f"Hi {data.get(company)}, we help automate revenue using AI systems."
+        "email": f"Hi {data.get(company)}, AI automation can increase your revenue."
     }
 
 # =========================
-# AI REPLY HANDLER
+# AI REPLY DECISION
 # =========================
 @app.post("/ai/reply")
 async def ai_reply(req: Request):
     data = await req.json()
-    return {"decision": ai_decide(data.get("message", ""))}
+    decision = ai_decide(data.get("message", ""))
+
+    return {"decision": decision}
 
 # =========================
-# STRIPE CHECKOUT
+# STRIPE CHECKOUT (CLOSING)
 # =========================
 @app.post("/checkout")
 async def checkout():
@@ -107,7 +111,7 @@ async def checkout():
     return {"url": session.url}
 
 # =========================
-# WEBHOOK (CLOSING LOOP)
+# WEBHOOK (REVENUE LOOP)
 # =========================
 @app.post("/webhook")
 async def webhook(req: Request):
@@ -126,26 +130,27 @@ async def webhook(req: Request):
         )
 
         DB.commit()
-        print("💰 DEAL CLOSED:", email)
+        print("💰 CLOSED DEAL:", email)
 
     return {"status": "ok"}
 
 # =========================
-# CRM
+# CRM VIEW
 # =========================
 @app.get("/crm")
 def crm():
-    leads = CUR.execute("SELECT * FROM leads").fetchall()
-    events = CUR.execute("SELECT * FROM events").fetchall()
-    return {"leads": leads, "events": events}
+    return {
+        "leads": CUR.execute("SELECT * FROM leads").fetchall(),
+        "events": CUR.execute("SELECT * FROM events").fetchall()
+    }
 
 # =========================
-# FOLLOW-UP ENGINE (LOGIC ONLY)
+# FOLLOW-UP SYSTEM (LOGIC)
 # =========================
 @app.get("/followups")
 def followups():
     return {
-        "sequence": [
+        "flow": [
             "Day 1: Intro email",
             "Day 3: Value proof",
             "Day 7: Case study",
