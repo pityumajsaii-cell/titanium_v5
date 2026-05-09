@@ -4,19 +4,19 @@ import uuid
 import os
 import stripe
 
-app = FastAPI(title="Titanium V7 Final Autonomous Revenue System")
+app = FastAPI(title="Titanium V8 Autonomous Revenue Engine")
 
 # =========================
-# CONFIG
+# STRIPE CONFIG
 # =========================
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 # =========================
-# DATABASE (CLEAN CRM CORE)
+# DB (CRM CORE)
 # =========================
-DB = sqlite3.connect("titanium_v7.db", check_same_thread=False)
+DB = sqlite3.connect("titanium_v8.db", check_same_thread=False)
 CUR = DB.cursor()
 
 CUR.execute("""
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS leads (
     id TEXT,
     email TEXT,
     company TEXT,
-    status TEXT
+    stage TEXT
 )
 """)
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS events (
 DB.commit()
 
 # =========================
-# LEAD SOURCE (PLUG-IN READY)
+# LEAD GENERATOR (PLUG-IN READY)
 # =========================
 def get_leads():
     return [
@@ -47,18 +47,18 @@ def get_leads():
     ]
 
 # =========================
-# AI SALES DECISION ENGINE
+# AI DECISION ENGINE
 # =========================
 def ai_decide(msg: str):
     msg = msg.lower()
     if "yes" in msg or "interested" in msg:
         return "close"
-    if "maybe" in msg:
-        return "follow_up"
-    return "nurture"
+    if "no" in msg:
+        return "stop"
+    return "follow_up"
 
 # =========================
-# LEADS
+# LEAD INGESTION
 # =========================
 @app.get("/leads/auto")
 def leads_auto():
@@ -74,23 +74,17 @@ def leads_auto():
     return {"generated": len(leads)}
 
 # =========================
-# AI MESSAGE GENERATOR
+# AI OUTREACH MESSAGE
 # =========================
 @app.post("/ai/message")
 async def ai_message(req: Request):
     data = await req.json()
     return {
-        "email": f"""
-Hi {data.get(company)},
-
-We help businesses automate revenue using AI systems.
-
-Interested in a quick demo?
-"""
+        "email": f"Hi {data.get(company)}, we help automate revenue using AI systems."
     }
 
 # =========================
-# AI REPLY ENGINE
+# AI REPLY HANDLER
 # =========================
 @app.post("/ai/reply")
 async def ai_reply(req: Request):
@@ -109,10 +103,11 @@ async def checkout():
         success_url="https://example.com/success",
         cancel_url="https://example.com/cancel"
     )
+
     return {"url": session.url}
 
 # =========================
-# WEBHOOK (REVENUE CLOSE LOOP)
+# WEBHOOK (CLOSING LOOP)
 # =========================
 @app.post("/webhook")
 async def webhook(req: Request):
@@ -127,11 +122,11 @@ async def webhook(req: Request):
 
         CUR.execute(
             "INSERT INTO events VALUES (?, ?, ?)",
-            (str(uuid.uuid4()), "payment", email)
+            (str(uuid.uuid4()), "paid", email)
         )
-        DB.commit()
 
-        print("💰 CLOSED DEAL:", email)
+        DB.commit()
+        print("💰 DEAL CLOSED:", email)
 
     return {"status": "ok"}
 
@@ -143,3 +138,17 @@ def crm():
     leads = CUR.execute("SELECT * FROM leads").fetchall()
     events = CUR.execute("SELECT * FROM events").fetchall()
     return {"leads": leads, "events": events}
+
+# =========================
+# FOLLOW-UP ENGINE (LOGIC ONLY)
+# =========================
+@app.get("/followups")
+def followups():
+    return {
+        "sequence": [
+            "Day 1: Intro email",
+            "Day 3: Value proof",
+            "Day 7: Case study",
+            "Day 14: Closing offer"
+        ]
+    }

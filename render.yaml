@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: titanium-v7-final-system
+    name: titanium-v8-autonomous-revenue
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
