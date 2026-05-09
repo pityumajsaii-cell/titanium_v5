@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: titanium-ai-revenue-v2
+    name: titanium-stable-engine
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
