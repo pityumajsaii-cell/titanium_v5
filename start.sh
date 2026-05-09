@@ -1,3 +1,3 @@
 #!/bin/bash
-echo "=== TITANIUM STRIPE ENGINE RUNNING ==="
+echo "=== TITANIUM AI REVENUE V2 RUNNING ==="
 uvicorn production_stack.backend.app:app --host 0.0.0.0 --port ${PORT:-8000}
