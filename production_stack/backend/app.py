@@ -1,60 +1,55 @@
 from fastapi import FastAPI, Request
-import stripe
 import os
+import json
 
-app = FastAPI(title="Titanium AI SaaS Engine")
+app = FastAPI(title="Titanium AI Sales Engine")
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-
-WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
-
-# ---- BASIC ----
+# ---------------- CORE ----------------
 @app.get("/")
 def root():
-    return {"status": "online", "system": "titanium_saas_engine"}
+    return {"system": "titanium_ai_sales_engine", "status": "online"}
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-# ---- PRICING CHECKOUT ----
-@app.post("/create-checkout-session")
-async def create_checkout():
-    session = stripe.checkout.Session.create(
-        payment_method_types=["card"],
-        mode="subscription",
-        line_items=[{
-            "price": os.getenv("STRIPE_PRICE_ID"),
-            "quantity": 1,
-        }],
-        success_url="https://example.com/success",
-        cancel_url="https://example.com/cancel",
-    )
-    return {"url": session.url}
+# ---------------- LEAD GENERATION ----------------
+@app.get("/leads/generate")
+def generate_leads():
+    leads = [
+        {"name": "Startup A", "email": "contact@startupa.com", "interest": "AI automation"},
+        {"name": "Company B", "email": "hello@companyb.com", "interest": "SaaS scaling"},
+        {"name": "Agency C", "email": "info@agencyc.com", "interest": "lead generation"},
+    ]
+    return {"leads": leads}
 
-# ---- WEBHOOK (BILLING CORE) ----
-@app.post("/webhook")
-async def webhook(request: Request):
-    payload = await request.body()
-    sig = request.headers.get("stripe-signature")
+# ---------------- AI SALES MESSAGE ----------------
+@app.post("/sales/message")
+async def sales_message(request: Request):
+    data = await request.json()
+    company = data.get("company", "Unknown")
 
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig, WEBHOOK_SECRET
-        )
-    except Exception as e:
-        return {"error": str(e)}
+    message = f"""
+Hi {company},
 
-    # PAYMENT SUCCESS
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        print("💰 NEW SUBSCRIPTION:", session.get("customer"))
+We help automate your sales pipeline using AI agents that generate leads, qualify prospects, and close deals automatically.
 
-    # SUBSCRIPTION UPDATED
-    if event["type"] == "customer.subscription.created":
-        print("📦 SUB CREATED")
+Would you like a demo?
 
-    if event["type"] == "invoice.payment_failed":
-        print("⚠️ PAYMENT FAILED")
+- Titanium AI Sales Engine
+"""
 
-    return {"status": "received"}
+    return {"message": message}
+
+# ---------------- CRM LOG ----------------
+SALES_LOG = []
+
+@app.post("/crm/log")
+async def crm_log(request: Request):
+    data = await request.json()
+    SALES_LOG.append(data)
+    return {"status": "logged", "total": len(SALES_LOG)}
+
+@app.get("/crm/all")
+def crm_all():
+    return {"crm": SALES_LOG}
