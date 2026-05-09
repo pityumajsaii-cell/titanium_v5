@@ -10,7 +10,7 @@ LOG=$BASE/cloud_log.txt
 GITHUB_USER="pityumajsaii-cell"
 GITHUB_TOKEN="PUT_YOUR_NEW_TOKEN_HERE"
 
-PROJECTS=("titanium_v5" "titanium_v4" "titanium_v3")
+PROJECTS=("titanium_v5" "titanium_v4" "titanium_v5")
 
 deploy_project() {
   DIR=$1
