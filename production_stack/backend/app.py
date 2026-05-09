@@ -1,33 +1,31 @@
 from fastapi import FastAPI, Request
 import os
 import stripe
-from typing import Dict
 
-app = FastAPI(title="Titanium Stable Revenue Engine")
+app = FastAPI(title="Titanium Master Stable System")
 
-# ENV
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 # =========================
-# PERSISTENT SAFE CRM (IN MEMORY SAFE VERSION)
+# SAFE CRM (memory based)
 # =========================
-USERS: Dict[str, dict] = {}
+CRM = {}
 
 # =========================
 # CORE
 # =========================
 @app.get("/")
 def root():
-    return {"system": "titanium_stable", "status": "online"}
+    return {"status": "online", "system": "titanium_master"}
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 # =========================
-# STRIPE CHECKOUT
+# CHECKOUT
 # =========================
 @app.post("/checkout")
 async def checkout():
@@ -44,7 +42,7 @@ async def checkout():
     return {"url": session.url}
 
 # =========================
-# WEBHOOK (FIXED + SAFE)
+# WEBHOOK (STABLE)
 # =========================
 @app.post("/webhook")
 async def webhook(request: Request):
@@ -60,30 +58,24 @@ async def webhook(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
-    # PAYMENT SUCCESS
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
 
         session_id = session.get("id")
         email = session.get("customer_details", {}).get("email")
 
-        if session_id:
-            USERS[session_id] = {
-                "email": email,
-                "status": "paid"
-            }
+        CRM[session_id] = {
+            "email": email,
+            "status": "paid"
+        }
 
-        print("PAYMENT SUCCESS:", email)
-
-    # PAYMENT FAILED
-    elif event["type"] == "invoice.payment_failed":
-        print("PAYMENT FAILED")
+        print("PAYMENT OK:", email)
 
     return {"status": "received"}
 
 # =========================
-# CRM
+# CRM VIEW
 # =========================
-@app.get("/users")
-def users():
-    return USERS
+@app.get("/crm")
+def crm():
+    return CRM

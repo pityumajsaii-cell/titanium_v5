@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: titanium-stable-engine
+    name: titanium-master-system
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt

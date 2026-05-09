@@ -1,3 +1,3 @@
 #!/bin/bash
-echo "=== TITANIUM STABLE ENGINE RUNNING ==="
+echo "=== TITANIUM MASTER SYSTEM RUNNING ==="
 uvicorn production_stack.backend.app:app --host 0.0.0.0 --port ${PORT:-8000}
